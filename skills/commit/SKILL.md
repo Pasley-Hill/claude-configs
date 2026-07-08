@@ -1,6 +1,7 @@
 ---
 name: commit
 description: Collect changes, write a well-formed git commit, then push or open a PR. Use when the user says "commit", "commit this", "commit and push", "commit and open a PR", or otherwise wants their working changes committed.
+model: sonnet
 ---
 
 # Commit Changes

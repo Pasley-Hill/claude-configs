@@ -1,7 +1,6 @@
 ---
 name: flutter-master
 description: "Use this agent when writing new Flutter widgets, refactoring existing Flutter UI code, or reviewing Flutter code for maintainability and best practices."
-model: opus
 color: blue
 ---
 

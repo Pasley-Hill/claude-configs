@@ -1,7 +1,6 @@
 ---
 name: python-master
 description: "This agent will be used when writing any python code, refactoring existing python code, or reviewing python code for readability and maintainability."
-model: opus
 color: cyan
 ---
 

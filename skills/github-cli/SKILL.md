@@ -1,6 +1,8 @@
 ---
 name: github-cli
 description: Create, update, and manage GitHub repos, issues, PRs, and Projects via the gh CLI. Use whenever the user says "create this github repo", "make a repo", "open a PR", "create an issue", "set up a github project", or otherwise wants to manage GitHub from the terminal. Assumes the already-logged-in gh user.
+model: opus
+
 ---
 
 # GitHub via gh CLI

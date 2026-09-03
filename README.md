@@ -7,6 +7,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 | Dir | What's in it |
 |-----|--------------|
 | `CLAUDE.md` | Machine-global Claude Code instructions (concise communication) |
+| `AGENTS.md` | Same communication style for Pi (`~/.pi/agent/AGENTS.md`) |
 | `skills/` | Skills (each a `SKILL.md`): `commit`, `create-admin-view`, `github-cli`, `grill-me` |
 | `agents/` | Subagents: `flutter-master`, `frontend-master`, `grammar-master`, `python-master` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
@@ -19,17 +20,27 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 Symlink or copy entries into a project's `.claude/` (or `~/.claude/`):
 
 ```bash
-ln -s "$PWD/CLAUDE.md" ~/.claude/CLAUDE.md
-ln -s "$PWD/skills/commit" ~/.claude/skills/commit
-ln -s "$PWD/agents/python-master.md" ~/.claude/agents/python-master.md
-ln -s "$PWD/commands/aws.md" ~/.claude/commands/aws.md
+ln -sfn "$PWD/CLAUDE.md" ~/.claude/CLAUDE.md
+ln -sfn "$PWD/skills/commit" ~/.claude/skills/commit
+ln -sfn "$PWD/agents/python-master.md" ~/.claude/agents/python-master.md
+ln -sfn "$PWD/commands/aws.md" ~/.claude/commands/aws.md
+```
+
+Pi (machine-global):
+
+```bash
+ln -sfn "$PWD/AGENTS.md" ~/.pi/agent/AGENTS.md
+ln -sfn "$PWD/skills/commit" ~/.pi/agent/skills/commit
 ```
 
 opencode (machine-global):
 
 ```bash
-mkdir -p ~/.config/opencode
-ln -s "$PWD/opencode/COMMUNICATION.md" ~/.config/opencode/COMMUNICATION.md
-ln -s "$PWD/opencode/opencode.jsonc" ~/.config/opencode/opencode.jsonc
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands
+ln -sfn "$PWD/opencode/COMMUNICATION.md" ~/.config/opencode/COMMUNICATION.md
+# merge `"instructions": ["COMMUNICATION.md"]` into existing opencode.json; do not clobber it
+ln -sfn "$PWD/agents/python-master.md" ~/.config/opencode/agents/python-master.md
+ln -sfn "$PWD/commands/aws.md" ~/.config/opencode/commands/aws.md
+# skills also auto-load from ~/.claude/skills and ~/.agents/skills
 # restart opencode after changing config
 ```

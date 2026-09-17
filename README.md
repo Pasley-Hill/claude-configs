@@ -8,7 +8,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 |-----|--------------|
 | `CLAUDE.md` | Machine-global Claude Code instructions (concise communication) |
 | `AGENTS.md` | Same communication style for Pi (`~/.pi/agent/AGENTS.md`) |
-| `skills/` | Skills (each a `SKILL.md`): `commit`, `create-admin-view`, `github-cli`, `grill-me` |
+| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `tailwind-plus-app-ui` |
 | `agents/` | Subagents: `flutter-master`, `frontend-master`, `grammar-master`, `python-master` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
 | `standards/` | Coding standards (e.g. `never-nester`) |
@@ -44,3 +44,18 @@ ln -sfn "$PWD/commands/aws.md" ~/.config/opencode/commands/aws.md
 # skills also auto-load from ~/.claude/skills and ~/.agents/skills
 # restart opencode after changing config
 ```
+
+## Skills with prerequisites
+
+`tailwind-plus-app-ui` drives the [Tailwind Plus](https://tailwindcss.com/plus)
+Application UI v4 HTML components. Those are licensed, so only the tooling and
+the component index live here — the download itself does not. Install it
+separately and point the skill at it:
+
+```bash
+export TAILWIND_PLUS_UI=/path/to/application-ui-v4   # the folder containing html/
+python3 skills/tailwind-plus-app-ui/scripts/tpui.py list   # verify
+```
+
+Without `$TAILWIND_PLUS_UI` it falls back to `~/repos/application-ui-v4`, and
+tells you what to fix if neither is there.

@@ -9,7 +9,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 | `CLAUDE.md` | Machine-global Claude Code instructions (concise communication) |
 | `AGENTS.md` | Same communication style for Pi (`~/.pi/agent/AGENTS.md`) |
 | `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `tailwind-plus-app-ui` |
-| `agents/` | Subagents: `flutter-master`, `frontend-master`, `grammar-master`, `python-master` |
+| `agents/` | Subagents: `flutter-master`, `frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
 | `standards/` | Coding standards (e.g. `never-nester`) |
 | `designs/` | Reusable design docs / stack templates (e.g. `vite-vanilla-fastapi`) |

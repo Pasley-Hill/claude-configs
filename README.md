@@ -6,21 +6,18 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 
 | Dir | What's in it |
 |-----|--------------|
-| `CLAUDE.md` | Machine-global Claude Code instructions (concise communication) |
-| `AGENTS.md` | Same communication style for Pi (`~/.pi/agent/AGENTS.md`) |
 | `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `tailwind-plus-app-ui` |
 | `agents/` | Subagents: `flutter-master`, `frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
 | `standards/` | Coding standards (e.g. `never-nester`) |
 | `designs/` | Reusable design docs / stack templates (e.g. `vite-vanilla-fastapi`) |
-| `opencode/` | Machine-global [opencode](https://opencode.ai) config (`COMMUNICATION.md` + `opencode.jsonc`) |
+| `opencode/` | Machine-global [opencode](https://opencode.ai) config (`opencode.jsonc`) |
 
 ## Usage
 
 Symlink or copy entries into a project's `.claude/` (or `~/.claude/`):
 
 ```bash
-ln -sfn "$PWD/CLAUDE.md" ~/.claude/CLAUDE.md
 ln -sfn "$PWD/skills/commit" ~/.claude/skills/commit
 ln -sfn "$PWD/agents/python-master.md" ~/.claude/agents/python-master.md
 ln -sfn "$PWD/commands/aws.md" ~/.claude/commands/aws.md
@@ -29,7 +26,6 @@ ln -sfn "$PWD/commands/aws.md" ~/.claude/commands/aws.md
 Pi (machine-global):
 
 ```bash
-ln -sfn "$PWD/AGENTS.md" ~/.pi/agent/AGENTS.md
 ln -sfn "$PWD/skills/commit" ~/.pi/agent/skills/commit
 ```
 
@@ -37,8 +33,6 @@ opencode (machine-global):
 
 ```bash
 mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands
-ln -sfn "$PWD/opencode/COMMUNICATION.md" ~/.config/opencode/COMMUNICATION.md
-# merge `"instructions": ["COMMUNICATION.md"]` into existing opencode.json; do not clobber it
 ln -sfn "$PWD/agents/python-master.md" ~/.config/opencode/agents/python-master.md
 ln -sfn "$PWD/commands/aws.md" ~/.config/opencode/commands/aws.md
 # skills also auto-load from ~/.claude/skills and ~/.agents/skills

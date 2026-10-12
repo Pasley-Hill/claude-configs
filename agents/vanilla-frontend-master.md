@@ -1,5 +1,5 @@
 ---
-name: frontend-master
+name: vanilla-frontend-master
 description: "All frontend work - HTML, CSS, JavaScript. Semantic markup, CSS variables, vanilla ES6+, never-nester, WCAG AA."
 color: "#22C55E"
 ---

@@ -12,7 +12,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
 | `standards/` | Coding standards (e.g. `never-nester`) |
 | `designs/` | Reusable design docs / stack templates (e.g. `vite-vanilla-fastapi`) |
-| `opencode/` | Machine-global [opencode](https://opencode.ai) config (`opencode.jsonc`) |
+| `opencode/` | Machine-global [opencode](https://opencode.ai) config (`opencode.jsonc`), plus `agents/`: opencode copies of the pipeline agents (model written as `anthropic/<id>`). Keep them in step with `agents/` |
 
 ## Usage
 
@@ -35,6 +35,7 @@ opencode (machine-global):
 ```bash
 mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands
 ln -sfn "$PWD/agents/python-master.md" ~/.config/opencode/agents/python-master.md
+ln -sfn "$PWD/opencode/agents/pipeline-coder.md" ~/.config/opencode/agents/pipeline-coder.md
 ln -sfn "$PWD/commands/aws.md" ~/.config/opencode/commands/aws.md
 # skills also auto-load from ~/.claude/skills and ~/.agents/skills
 # restart opencode after changing config

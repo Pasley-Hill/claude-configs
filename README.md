@@ -6,7 +6,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 
 | Dir | What's in it |
 |-----|--------------|
-| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `tailwind-plus-app-ui` |
+| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui` |
 | `plugins/` | Vendored Claude Code plugins: `frontend-design` (from anthropics/claude-plugins-official) |
 | `agents/` | Subagents: `flutter-master`, `vanilla-frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
@@ -42,6 +42,16 @@ ln -sfn "$PWD/commands/aws.md" ~/.config/opencode/commands/aws.md
 ```
 
 ## Skills with prerequisites
+
+`quiz-me` builds a local flashcard and quiz app for learning a repo or topic.
+Run `/quiz-me` with a topic, or with nothing to cover the whole project. It
+needs Python 3.9+ and Node with `npx` (it serves the app with Vite 8, fetched on
+first run). It writes to a `.quiz-me/` folder that git ignores, and saves
+progress in the browser.
+
+```bash
+ln -sfn "$PWD/skills/quiz-me" ~/.claude/skills/quiz-me
+```
 
 `tailwind-plus-app-ui` drives the [Tailwind Plus](https://tailwindcss.com/plus)
 Application UI v4 HTML components. Those are licensed, so only the tooling and

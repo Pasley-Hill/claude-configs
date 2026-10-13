@@ -6,7 +6,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 
 | Dir | What's in it |
 |-----|--------------|
-| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui`, `trello`, `trello-task` |
+| `skills/` | Skills (each a `SKILL.md`): `commit`, `domain-placement-review` (does this code belong in shared or in one domain? PR check, census and move plan for any repo), `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui`, `trello`, `trello-task` |
 | `plugins/` | Vendored Claude Code plugins: `frontend-design` (from anthropics/claude-plugins-official) |
 | `agents/` | Subagents: `flutter-master`, `vanilla-frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `update-readme`, `upload-mockups` |

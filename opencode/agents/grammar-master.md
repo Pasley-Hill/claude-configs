@@ -1,6 +1,6 @@
 ---
 description: "Grammar/spelling/copy reviewer for customer-facing surfaces. Scans templates, UI strings, notification text, and marketing/legal copy. Skips admin/system views, logs, code comments, dev docs."
-model: anthropic/claude-opus-4-6
+model: anthropic/claude-opus-5-5
 mode: subagent
 color: "#EF4444"
 ---

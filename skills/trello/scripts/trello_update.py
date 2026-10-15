@@ -499,7 +499,7 @@ def cmd_show(args):
         print("\n--- Recent comments ---")
         for a in comments:
             who = a["memberCreator"]["fullName"]
-            print(f"\n[{a['date'][:16].replace('T', ' ')}] {who}:")
+            print(f"\n[{a['date'][:16].replace('T', ' ')}] {who}  (id {a['id']}):")
             print("  " + a["data"]["text"].replace("\n", "\n  "))
 
 
@@ -526,6 +526,40 @@ def cmd_comment(args):
     text = args.text
     post(f"/cards/{card['id']}/actions/comments", {"text": text})
     print(f"Commented on #{card['idShort']} '{card['name']}':\n{text}")
+
+
+def cmd_edit_comment(args):
+    """Edit one of MY comments on a card. Trello only lets the token's member
+    edit their own comments, so candidates are filtered to those up front.
+    Target: --id, else the newest of my comments (narrowed by --match)."""
+    card = resolve_card(args.card)
+    me = get("/members/me", {"fields": "id"})
+    comments = get(f"/cards/{card['id']}/actions",
+                   {"filter": "commentCard", "limit": "1000"})
+    mine = [a for a in comments if a["idMemberCreator"] == me["id"]]
+    if args.id:
+        mine = [a for a in mine if a["id"] == args.id]
+        if not mine:
+            die(f"no comment of mine with id {args.id} on #{card['idShort']}")
+    if args.match:
+        mine = [a for a in mine if args.match in a["data"]["text"]]
+    if not mine:
+        die(f"no matching comment of mine on #{card['idShort']}")
+    target = mine[0]  # actions come newest first
+    old = target["data"]["text"]
+    if args.set is not None:
+        new = args.set
+    elif args.replace:
+        find, repl = args.replace
+        if find not in old:
+            die(f"text to replace not found in comment {target['id']}")
+        new = old.replace(find, repl)
+    else:
+        die("pass --set TEXT or --replace OLD NEW")
+    put(f"/actions/{target['id']}/text", {"value": new})
+    print(f"Edited comment {target['id']} "
+          f"({target['date'][:16].replace('T', ' ')}) on "
+          f"#{card['idShort']} '{card['name']}':\n{new}")
 
 
 def cmd_desc(args):
@@ -795,6 +829,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("card")
     s.add_argument("text")
     s.set_defaults(func=cmd_comment)
+
+    s = sub.add_parser("edit-comment",
+                       help="edit one of my comments (newest, or by --id / --match)")
+    s.add_argument("card")
+    s.add_argument("--id", help="comment (action) id, as printed by `show`")
+    s.add_argument("--match", help="pick my newest comment containing this text")
+    g = s.add_mutually_exclusive_group(required=True)
+    g.add_argument("--set", help="replace the whole comment text")
+    g.add_argument("--replace", nargs=2, metavar=("OLD", "NEW"),
+                   help="replace a substring inside the comment")
+    s.set_defaults(func=cmd_edit_comment)
 
     s = sub.add_parser("desc", help="set or append to the description")
     s.add_argument("card")

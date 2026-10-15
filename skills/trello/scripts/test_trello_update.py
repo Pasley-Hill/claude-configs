@@ -27,6 +27,11 @@ BOARDS = [
     {"id": "d" * 24, "shortLink": "t7CdxreR", "name": "Autoturn.ai Wholesale", "organization": None},
     {"id": "e" * 24, "shortLink": "Qq1Ww2Ee", "name": "Redline QA", "organization": {"displayName": "Redline"}},
 ]
+COMMENTS = [  # newest first, as Trello returns them
+    {"id": "c3", "idMemberCreator": "someone", "date": "2026-10-15T10:00:00Z", "data": {"text": "not mine"}},
+    {"id": "c2", "idMemberCreator": "me", "date": "2026-10-14T10:00:00Z", "data": {"text": "deployed to staging"}},
+    {"id": "c1", "idMemberCreator": "me", "date": "2026-10-13T10:00:00Z", "data": {"text": "started on it"}},
+]
 LISTS = [{"id": "l1", "name": "Todo", "closed": False},
          {"id": "l2", "name": "✅ Done Week 3/9/2026", "closed": True}]
 
@@ -39,6 +44,8 @@ class FakeTrello:
 
     def __call__(self, method, path, params=None, json_body=None, retries=3, missing_ok=False):
         self.calls.append((method, path))
+        if path.endswith("/actions") and method == "GET":
+            return COMMENTS
         if path.startswith("/cards/") and method == "GET":
             ref = path.split("/")[2]
             for c in (CHECKOUT, OTHER):
@@ -49,6 +56,8 @@ class FakeTrello:
             tu.die(f"GET {path} -> 404")
         if path == "/members/me/boards":
             return BOARDS
+        if path == "/members/me":
+            return {"id": "me"}
         if path.endswith("/cards/all") or path.endswith("/cards/open"):
             return [CHECKOUT, OTHER]
         if path.endswith("/lists"):
@@ -178,6 +187,42 @@ class SetupHelpTest(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 tu.main()
         self.assertEqual(die.call_args[0][0], tu.SETUP_HELP)
+
+
+class EditCommentTest(unittest.TestCase):
+    def setUp(self):
+        self.api = FakeTrello()
+        patcher = mock.patch.object(tu, "_request", self.api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _edit(self, **kw):
+        args = SimpleNamespace(card="#12", id=None, match=None, set=None, replace=None)
+        for k, v in kw.items():
+            setattr(args, k, v)
+        with mock.patch("builtins.print"):
+            tu.cmd_edit_comment(args)
+        return [c for c in self.api.calls if c[0] == "PUT"]
+
+    def test_defaults_to_my_newest_comment_not_someone_elses(self):
+        self.assertEqual(self._edit(set="x"), [("PUT", "/actions/c2/text")])
+
+    def test_by_id(self):
+        self.assertEqual(self._edit(id="c1", set="x"), [("PUT", "/actions/c1/text")])
+
+    def test_by_match(self):
+        self.assertEqual(self._edit(match="started", set="x"), [("PUT", "/actions/c1/text")])
+
+    def test_replace_text_missing_is_refused(self):
+        with mock.patch.object(tu, "die", side_effect=SystemExit):
+            with self.assertRaises(SystemExit):
+                self._edit(replace=("nope", "x"))
+        self.assertFalse([c for c in self.api.calls if c[0] == "PUT"])
+
+    def test_someone_elses_comment_id_is_refused(self):
+        with mock.patch.object(tu, "die", side_effect=SystemExit):
+            with self.assertRaises(SystemExit):
+                self._edit(id="c3", set="x")
 
 
 class RequestMissingOkTest(unittest.TestCase):

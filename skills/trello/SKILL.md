@@ -97,6 +97,7 @@ they mean before mutating anything.
 **Write**
 - `move <card> <list> [--comment TEXT] [--top|--bottom]` — move between lists
 - `comment <card> "TEXT"` — post a progress note
+- `edit-comment <card> (--set TEXT | --replace OLD NEW) [--id ID | --match TEXT]` — edit one of **your own** comments (Trello allows no other); defaults to your newest comment on the card. `show` prints each comment's id
 - `desc <card> --append TEXT` / `--set TEXT` — edit the description
 - `check <card> "ITEM"` / `uncheck <card> "ITEM"` — tick checklist items by substring (`--all` for every match)
 - `add-items <card> "ITEM" ["ITEM"...] [--checklist NAME] [--checked]` — add checklist items, creating the checklist if needed

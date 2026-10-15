@@ -6,10 +6,10 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 
 | Dir | What's in it |
 |-----|--------------|
-| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui` |
+| `skills/` | Skills (each a `SKILL.md`): `commit`, `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui`, `trello`, `trello-task` |
 | `plugins/` | Vendored Claude Code plugins: `frontend-design` (from anthropics/claude-plugins-official) |
 | `agents/` | Subagents: `flutter-master`, `vanilla-frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
-| `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `trello-task`, `update-readme`, `upload-mockups` |
+| `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `update-readme`, `upload-mockups` |
 | `standards/` | Coding standards (e.g. `never-nester`) |
 | `designs/` | Reusable design docs / stack templates (e.g. `vite-vanilla-fastapi`) |
 | `opencode/` | Machine-global [opencode](https://opencode.ai) config (`opencode.jsonc`), plus `agents/`: opencode copies of the pipeline agents (model written as `anthropic/<id>`). Keep them in step with `agents/` |
@@ -65,3 +65,19 @@ python3 skills/tailwind-plus-app-ui/scripts/tpui.py list   # verify
 
 Without `$TAILWIND_PLUS_UI` it falls back to `~/repos/application-ui-v4`, and
 tells you what to fix if neither is there.
+
+`trello` (update an existing card) and `trello-task` (write and push a new one)
+drive the Redline OS and AutoTurn Trello boards (`TRELLO_BOARD=autoturn` for the
+second). Both run one standard-library CLI, `skills/trello/scripts/trello_update.py`,
+so there is no venv. Link both, then add your **own** Trello key and token; every
+write lands under your name:
+
+```bash
+ln -sfn "$PWD/skills/trello" ~/.claude/skills/trello
+ln -sfn "$PWD/skills/trello-task" ~/.claude/skills/trello-task
+python3 ~/.claude/skills/trello/scripts/trello_update.py setup   # says where the token goes
+```
+
+Credentials live in `~/.config/trello/credentials` (`TRELLO_API_KEY=` and
+`TRELLO_TOKEN=` lines, `chmod 600`), outside every repo. Offline tests:
+`python3 -m unittest discover -s skills/trello/scripts`.

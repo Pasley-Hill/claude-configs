@@ -22,6 +22,11 @@ _spec.loader.exec_module(tu)
 
 CHECKOUT = {"id": "a" * 24, "idShort": 12, "shortLink": "Zq3kP9xA", "name": "Fix checkout flow"}
 OTHER = {"id": "b" * 24, "idShort": 13, "shortLink": "Lm8nB2cD", "name": "Photo report"}
+BOARDS = [
+    {"id": "c" * 24, "shortLink": "JEcYPEdW", "name": "Redline OS", "organization": {"displayName": "Redline"}},
+    {"id": "d" * 24, "shortLink": "t7CdxreR", "name": "Autoturn.ai Wholesale", "organization": None},
+    {"id": "e" * 24, "shortLink": "Qq1Ww2Ee", "name": "Redline QA", "organization": {"displayName": "Redline"}},
+]
 LISTS = [{"id": "l1", "name": "Todo", "closed": False},
          {"id": "l2", "name": "✅ Done Week 3/9/2026", "closed": True}]
 
@@ -42,6 +47,8 @@ class FakeTrello:
             if missing_ok:
                 return None
             tu.die(f"GET {path} -> 404")
+        if path == "/members/me/boards":
+            return BOARDS
         if path.endswith("/cards/all") or path.endswith("/cards/open"):
             return [CHECKOUT, OTHER]
         if path.endswith("/lists"):
@@ -101,6 +108,76 @@ class MoveTest(unittest.TestCase):
         with mock.patch("builtins.print"):
             self._move("Todo")
         self.assertIn(("PUT", f"/cards/{CHECKOUT['id']}"), self.api.calls)
+
+
+class BoardSelectionTest(unittest.TestCase):
+    def setUp(self):
+        self.api = FakeTrello()
+        patcher = mock.patch.object(tu, "_request", self.api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(setattr, tu, "BOARD_ID", tu.BOARD_ID)
+        self.addCleanup(setattr, tu, "_BOARD_OVERRIDE", tu._BOARD_OVERRIDE)
+
+    def _pick(self, override="", default=""):
+        tu._BOARD_OVERRIDE, tu.BOARD_ID = override, default
+        tu.require_board()
+        return tu.BOARD_ID
+
+    def _pick_fails(self, override="", default=""):
+        with mock.patch.object(tu, "die", side_effect=SystemExit) as die:
+            with self.assertRaises(SystemExit):
+                self._pick(override, default)
+        return die.call_args[0][0]
+
+    def test_override_by_short_id(self):
+        self.assertEqual(self._pick("t7CdxreR"), "t7CdxreR")
+
+    def test_override_by_name_part(self):
+        self.assertEqual(self._pick("autoturn"), "t7CdxreR")
+
+    def test_override_by_exact_name_beats_substring(self):
+        self.assertEqual(self._pick("redline os"), "JEcYPEdW")
+
+    def test_override_wins_over_default(self):
+        self.assertEqual(self._pick("autoturn", default="JEcYPEdW"), "t7CdxreR")
+
+    def test_default_used_without_override(self):
+        self.assertEqual(self._pick(default="JEcYPEdW"), "JEcYPEdW")
+        self.assertEqual(self.api.calls, [])
+
+    def test_ambiguous_override_lists_only_the_matches(self):
+        msg = self._pick_fails("redline")
+        self.assertIn("matches several boards", msg)
+        self.assertIn("Qq1Ww2Ee", msg)
+        self.assertNotIn("t7CdxreR", msg)
+
+    def test_unknown_override_lists_every_board(self):
+        msg = self._pick_fails("nope")
+        self.assertIn("matches none of your boards", msg)
+        self.assertIn("t7CdxreR", msg)
+
+    def test_no_board_explains_how_to_set_one(self):
+        msg = self._pick_fails()
+        self.assertIn("No Trello board chosen", msg)
+        self.assertIn("TRELLO_BOARD_ID=JEcYPEdW", msg)
+        self.assertIn(str(tu.CREDENTIALS_FILE), msg)
+        self.assertIn("TRELLO_BOARD=JEcYPEdW", msg)
+
+
+class SetupHelpTest(unittest.TestCase):
+    def test_setup_help_has_the_trello_clicks_and_save_commands(self):
+        for needle in ("https://trello.com/power-ups/admin", '"New"', "Generate a new API key",
+                       '"Token"', '"Allow"', "chmod 600", "boards"):
+            self.assertIn(needle, tu.SETUP_HELP)
+
+    def test_missing_credentials_stop_every_command(self):
+        with mock.patch.dict(tu.AUTH, {"key": "", "token": ""}), \
+             mock.patch.object(sys, "argv", ["trello_update.py", "board"]), \
+             mock.patch.object(tu, "die", side_effect=SystemExit) as die:
+            with self.assertRaises(SystemExit):
+                tu.main()
+        self.assertEqual(die.call_args[0][0], tu.SETUP_HELP)
 
 
 class RequestMissingOkTest(unittest.TestCase):

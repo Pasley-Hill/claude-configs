@@ -40,10 +40,10 @@ Rules:
 
 ## Setup (once per person)
 
-Same credentials as the `trello` skill: your own key and token in
-`~/.config/trello/credentials`. Run
-`python3 ~/.claude/skills/trello/scripts/trello_update.py setup` to check them or to
-get the steps for creating them.
+Same credentials and default board as the `trello` skill, in
+`~/.config/trello/credentials`. If anything is missing, run
+`python3 ~/.claude/skills/trello/scripts/trello_update.py setup`. It prints the exact
+clicks on trello.com for the token, and the commands to save it and to pick a board.
 
 Cards are pushed with the same standard-library CLI the `trello` skill uses — no
 venv, no `pip install`:
@@ -63,14 +63,14 @@ Two boards, and they are not interchangeable:
 
 | Board | Short id | Reach it with | Use for |
 |---|---|---|---|
-| **Redline OS** | `JEcYPEdW` | *(default)* | Redline OS: the rebuild, ports, parity work, bugs |
+| **Redline OS** | `JEcYPEdW` | `TRELLO_BOARD=redline` | Redline OS: the rebuild, ports, parity work, bugs |
 | **Autoturn.ai Wholesale** | `t7CdxreR` | `TRELLO_BOARD=autoturn` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
 
-The CLI's default board is Redline OS. **Treat that as a fallback, not as
-the answer.** If the user names a board ("the AutoTurn board"), prefix the
-command with `TRELLO_BOARD=autoturn`. If no board is named and the work's
-subject doesn't make it obvious, **ask**. Getting this wrong means the user has
-to move the card by hand.
+The user's `TRELLO_BOARD_ID` default is a **fallback, not the answer**. If the user
+names a board ("the AutoTurn board"), prefix the command with
+`TRELLO_BOARD=<short id or name>`. If no board is named and the work's subject
+doesn't make it obvious, **ask**. Getting this wrong means the user has to move
+the card by hand. `... trello_update.py boards` lists every board they can write to.
 
 `JEcYPEdW` was renamed from "Lotgentix" to **"Redline OS"**, so a name check
 against the old label finds nothing. When you confirm a board mapping against

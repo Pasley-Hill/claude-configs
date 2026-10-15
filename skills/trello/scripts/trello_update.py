@@ -61,40 +61,63 @@ CREDENTIALS_FILE = Path(
     os.getenv("TRELLO_CREDENTIALS_FILE") or Path.home() / ".config" / "trello" / "credentials"
 ).expanduser()
 _ENV = _read_env_file(CREDENTIALS_FILE)
-DEFAULT_BOARD_ID = "JEcYPEdW"  # Redline OS
+CLI = "python3 ~/.claude/skills/trello/scripts/trello_update.py"
 
 SETUP_HELP = f"""\
 Trello credentials missing. Each person uses their OWN key and token; every write
-lands under the token owner's name on a board the whole team watches.
+lands under the token owner's name on boards the whole team watches.
 
-1. Get your API key and generate a token (log in to Trello as yourself):
-     https://trello.com/power-ups/admin  ->  your Power-Up  ->  API key  ->  "Token"
-2. Save both in {CREDENTIALS_FILE}:
-     mkdir -p {CREDENTIALS_FILE.parent}
-     printf 'TRELLO_API_KEY=%s\\nTRELLO_TOKEN=%s\\n' '<key>' '<token>' > {CREDENTIALS_FILE}
-     chmod 600 {CREDENTIALS_FILE}
-3. Verify (read-only):  python3 ~/.claude/skills/trello/scripts/trello_update.py board
+STEP 1 - get an API key (once). Log in to trello.com as yourself, then:
+  1. Open https://trello.com/power-ups/admin
+  2. Click "New" (top right). If it asks for a Workspace, pick yours.
+  3. Fill the form: App name "Claude Trello CLI", your Workspace, your email
+     (in "Email" and "Support contact"), your name as "Author". Leave
+     "Iframe connector URL" empty. Click "Create".
+  4. On the next page click "Generate a new API key". Copy the "API key".
 
-The file lives outside every repo, so it works from any checkout and can never be
-committed. TRELLO_API_KEY / TRELLO_TOKEN in the process env also work."""
+STEP 2 - get a token. On that same page, to the right of the API key, click the
+  "Token" link ("...you can manually generate a Token"). Trello asks to let the
+  app use your account: scroll down and click "Allow". Copy the long token it
+  shows (it starts with ATTA).
 
-# Known boards, by short id. TRELLO_BOARD_ID (env or credentials file) sets the
-# default, Redline OS if unset; an explicit TRELLO_BOARD env var overrides it per
-# command. Note "lotgentix" and "redline" are the SAME
-# board — JEcYPEdW was renamed "Redline OS", and both names still resolve.
-BOARDS = {
-    "redline": "JEcYPEdW",
-    "redline-os": "JEcYPEdW",
-    "lotgentix": "JEcYPEdW",
-    "autoturn": "t7CdxreR",
-}
+STEP 3 - save both. Paste them in place of <key> and <token>:
+  mkdir -p {CREDENTIALS_FILE.parent}
+  printf 'TRELLO_API_KEY=%s\\nTRELLO_TOKEN=%s\\n' '<key>' '<token>' > {CREDENTIALS_FILE}
+  chmod 600 {CREDENTIALS_FILE}
+
+STEP 4 - pick your default board. List the boards your token can see:
+  {CLI} boards
+
+{CREDENTIALS_FILE} lives outside every repo, so it works from any checkout and
+can never be committed. Never paste a token into a repo or a chat."""
+
+
+def board_help(boards: list[dict] | None = None) -> str:
+    """How to choose a board, with the exact commands for this person's boards."""
+    lines = ["Your boards (name, short id, workspace):"]
+    for b in boards or []:
+        ws = (b.get("organization") or {}).get("displayName") or "personal"
+        lines.append(f"  {b['name']:<40} {b['shortLink']}   {ws}")
+    if not boards:
+        lines.append(f"  (run: {CLI} boards)")
+    f = CREDENTIALS_FILE
+    lines += ["", "Set your DEFAULT board (used when you don't name one). Run the line for the one you want:"]
+    for b in boards or [{"shortLink": "<short id>", "name": "<board name>"}]:
+        lines.append(f"  # {b['name']}")
+        lines.append(f"  grep -v '^TRELLO_BOARD_ID=' {f} > {f}.tmp; echo 'TRELLO_BOARD_ID={b['shortLink']}' >> {f}.tmp; "
+                     f"mv {f}.tmp {f}; chmod 600 {f}")
+    sample = (boards or [{"shortLink": "<short id>", "name": "<board name>"}])[0]
+    lines += [
+        "",
+        "Use ANOTHER board for one command, by short id or by name (any unique part):",
+        f"  TRELLO_BOARD={sample['shortLink']} {CLI} board",
+        f"  TRELLO_BOARD='{sample['name']}' {CLI} board",
+    ]
+    return "\n".join(lines)
+
+
 _BOARD_OVERRIDE = os.getenv("TRELLO_BOARD", "").strip()
-BOARD_ID = (
-    BOARDS.get(_BOARD_OVERRIDE.lower(), _BOARD_OVERRIDE)
-    or os.getenv("TRELLO_BOARD_ID")
-    or _ENV.get("TRELLO_BOARD_ID")
-    or DEFAULT_BOARD_ID
-)
+BOARD_ID = os.getenv("TRELLO_BOARD_ID") or _ENV.get("TRELLO_BOARD_ID") or ""
 AUTH = {
     "key": os.getenv("TRELLO_API_KEY") or _ENV.get("TRELLO_API_KEY", ""),
     "token": os.getenv("TRELLO_TOKEN") or _ENV.get("TRELLO_TOKEN", ""),
@@ -110,10 +133,6 @@ PRIORITY_FIELD_NAME = "Priority"
 def _request(method: str, path: str, params: dict | None = None,
              json_body: dict | None = None, retries: int = 3,
              missing_ok: bool = False):
-    if not AUTH["key"] or not AUTH["token"]:
-        die(SETUP_HELP)
-    if not BOARD_ID:
-        die("no board — set TRELLO_BOARD_ID or pass TRELLO_BOARD=redline")
     merged = {**AUTH, **(params or {})}
     url = f"{BASE_URL}{path}?{urllib.parse.urlencode(merged)}"
     body = json.dumps(json_body).encode() if json_body is not None else None
@@ -161,6 +180,30 @@ def delete(path, params=None):
 def die(msg: str, code: int = 1):
     print(f"Error: {msg}", file=sys.stderr)
     sys.exit(code)
+
+
+def my_boards() -> list[dict]:
+    return get("/members/me/boards", {"filter": "open", "fields": "name,shortLink",
+                                      "organization": "true",
+                                      "organization_fields": "displayName"})
+
+
+def require_board():
+    """Pick the board for this command: TRELLO_BOARD (short id or name), else the
+    TRELLO_BOARD_ID default. With neither, explain how to set one and stop."""
+    global BOARD_ID
+    if _BOARD_OVERRIDE:
+        boards = my_boards()
+        n = _BOARD_OVERRIDE.lower()
+        hits = ([b for b in boards if n in (b["shortLink"].lower(), b["id"])]
+                or [b for b in boards if b["name"].lower() == n]
+                or [b for b in boards if n in b["name"].lower()])
+        if len(hits) != 1:
+            why = "matches several boards" if hits else "matches none of your boards"
+            die(f"TRELLO_BOARD='{_BOARD_OVERRIDE}' {why}.\n\n" + board_help(hits or boards))
+        BOARD_ID = hits[0]["shortLink"]
+    elif not BOARD_ID:
+        die("No Trello board chosen.\n\n" + board_help(my_boards()))
 
 
 # --------------------------------------------------------------------------
@@ -336,13 +379,29 @@ def card_custom_values(card_id: str) -> dict:
 # Subcommands
 # --------------------------------------------------------------------------
 def cmd_setup(args):
-    """Say where credentials are read from and whether they are set. No network."""
-    if AUTH["key"] and AUTH["token"]:
-        src = "process env" if os.getenv("TRELLO_TOKEN") else CREDENTIALS_FILE
-        print(f"Trello credentials found ({src}). Default board: {BOARD_ID}")
-        print("Verify (read-only): python3 ~/.claude/skills/trello/scripts/trello_update.py board")
-    else:
+    """Walk through whatever is missing: credentials, then a default board."""
+    if not (AUTH["key"] and AUTH["token"]):
         print(SETUP_HELP)
+        return
+    src = "process env" if os.getenv("TRELLO_TOKEN") else CREDENTIALS_FILE
+    me = get("/members/me", {"fields": "fullName,username"})
+    print(f"Credentials OK ({src}): {me['fullName']} @{me['username']}")
+    if not BOARD_ID:
+        print("No default board yet.\n")
+        print(board_help(my_boards()))
+        return
+    board = get(f"/boards/{BOARD_ID}", {"fields": "name"})
+    print(f"Default board: {board['name']} ({BOARD_ID})\n")
+    print(board_help(my_boards()))
+
+
+def cmd_boards(args):
+    """Every open board the token can see, and how to pick one."""
+    boards = my_boards()
+    print(board_help(boards))
+    if BOARD_ID:
+        name = next((b["name"] for b in boards if BOARD_ID in (b["shortLink"], b["id"])), "?")
+        print(f"\nCurrent default: {name} ({BOARD_ID})")
 
 
 def cmd_board(args):
@@ -683,8 +742,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Update existing Trello cards (progress tracking).")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("setup", help="where your Trello credentials go, and whether they are set")
+    s = sub.add_parser("setup", help="step-by-step: get a token, save it, pick a default board")
     s.set_defaults(func=cmd_setup)
+
+    s = sub.add_parser("boards", help="list your boards and how to switch between them")
+    s.set_defaults(func=cmd_boards)
 
     s = sub.add_parser("board", help="dump lists, labels, members, custom fields")
     s.set_defaults(func=cmd_board)
@@ -794,6 +856,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main():
     args = build_parser().parse_args()
+    if not (AUTH["key"] and AUTH["token"]) and args.cmd != "setup":
+        die(SETUP_HELP)
+    if args.cmd not in ("setup", "boards"):
+        require_board()
     args.func(args)
 
 

@@ -13,27 +13,25 @@ specific feature — NOT for creating cards. If the user wants a new card, use t
 
 Everyone uses their **own** Trello key and token, kept in
 `~/.config/trello/credentials`, outside every repo, so they work from any checkout
-and can never be committed. To see where they go and whether
-they are already set:
+and can never be committed. Every write lands under the token owner's name, so
+never borrow someone else's token.
 
 ```bash
 python3 ~/.claude/skills/trello/scripts/trello_update.py setup
 ```
 
-If they are missing, `setup` prints the steps: get your key and generate a token at
-https://trello.com/power-ups/admin, then write
+`setup` walks through whatever is missing, in order:
 
-```
-TRELLO_API_KEY=<your key>
-TRELLO_TOKEN=<your token>
-```
+1. **No credentials:** it prints the exact clicks on trello.com to get an API key
+   and a token, and the commands that save them to the credentials file.
+2. **No default board:** it lists every board the token can see, with short ids,
+   and the exact command that sets `TRELLO_BOARD_ID` in the credentials file.
+3. **All set:** it shows who the token belongs to and which board is the default.
 
-to `~/.config/trello/credentials` with `chmod 600`. Every write lands under the
-token owner's name, so never borrow someone else's token. Process env vars
-(`TRELLO_API_KEY` / `TRELLO_TOKEN`) also work, but the file above is the place to
-keep them. When a command fails
-with "credentials missing", run `setup` and walk the user through it. Don't go
-hunting for a token anywhere else.
+Any other command stops with the same guidance when something is missing. When
+that happens, show the user the output, let them run the commands that need their
+key or token themselves, and never ask them to paste a token into the chat. Don't
+go looking for a token anywhere else.
 
 The script is **standard library only**, so there is no venv and no `pip install`:
 
@@ -45,29 +43,27 @@ Never pass the key or token on the command line.
 
 ## Which board
 
-Two boards, not interchangeable:
-
-| Board | Short id | Reach it with | Use for |
-|---|---|---|---|
-| **Redline OS** | `JEcYPEdW` | *(default)* | Redline OS: the rebuild, ports, parity work, bugs |
-| **Autoturn.ai Wholesale** | `t7CdxreR` | `TRELLO_BOARD=autoturn` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
-
-**Redline OS is the default** (the CLI falls back to it when `TRELLO_BOARD_ID` is
-unset). To act on an AutoTurn card, prefix the command:
+There is no built-in default. Each person sets theirs as `TRELLO_BOARD_ID` in
+`~/.config/trello/credentials`. To work on any other board, pass `TRELLO_BOARD`
+for that one command. It takes the board's short id or any unique part of its name:
 
 ```bash
+python3 ~/.claude/skills/trello/scripts/trello_update.py boards     # your boards + exact commands
 TRELLO_BOARD=autoturn python3 ~/.claude/skills/trello/scripts/trello_update.py board
+TRELLO_BOARD=JEcYPEdW python3 ~/.claude/skills/trello/scripts/trello_update.py board
 ```
 
-`TRELLO_BOARD` accepts a name (`redline`, `lotgentix`, `autoturn`) or a raw short
-id, and it **overrides** `TRELLO_BOARD_ID`. Without it you operate on Redline OS — and a
-card number that exists on both boards resolves to the wrong card. If the user
-names a board, pass it. If they don't and the subject doesn't make it obvious,
-ask.
+The team's two boards are not interchangeable:
 
-`JEcYPEdW` was renamed from "Lotgentix" to "Redline OS". Both names resolve to
-it here, but a name check against Trello's API for the old label finds nothing —
-match on `shortLink`, never on name.
+| Board | Short id | Use for |
+|---|---|---|
+| **Redline OS** (formerly "Lotgentix") | `JEcYPEdW` | The Redline OS rebuild, ports, parity work, bugs |
+| **Autoturn.ai Wholesale** | `t7CdxreR` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
+
+A card number can exist on both boards and resolve to the wrong card. If the user
+names a board, pass it with `TRELLO_BOARD`. If they don't and the subject doesn't
+make it obvious, ask. If `TRELLO_BOARD` matches none or several of the user's
+boards, the CLI lists them. Pick the right one from that list, never guess.
 
 Run `... trello_update.py board` any time you need the current lists, labels,
 members and custom-field options. Run `--help` or `<subcommand> --help` for

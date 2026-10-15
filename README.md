@@ -67,17 +67,20 @@ Without `$TAILWIND_PLUS_UI` it falls back to `~/repos/application-ui-v4`, and
 tells you what to fix if neither is there.
 
 `trello` (update an existing card) and `trello-task` (write and push a new one)
-drive the Redline OS and AutoTurn Trello boards (`TRELLO_BOARD=autoturn` for the
-second). Both run one standard-library CLI, `skills/trello/scripts/trello_update.py`,
-so there is no venv. Link both, then add your **own** Trello key and token; every
-write lands under your name:
+drive Trello boards through one standard-library CLI,
+`skills/trello/scripts/trello_update.py`, so there is no venv. Each person uses
+their **own** Trello key and token, since every write lands under that person's name:
 
 ```bash
 ln -sfn "$PWD/skills/trello" ~/.claude/skills/trello
 ln -sfn "$PWD/skills/trello-task" ~/.claude/skills/trello-task
-python3 ~/.claude/skills/trello/scripts/trello_update.py setup   # says where the token goes
+python3 ~/.claude/skills/trello/scripts/trello_update.py setup
 ```
 
-Credentials live in `~/.config/trello/credentials` (`TRELLO_API_KEY=` and
-`TRELLO_TOKEN=` lines, `chmod 600`), outside every repo. Offline tests:
+`setup` walks through whatever is missing. It gives the exact clicks on
+trello.com to get a key and token, the commands that save them to
+`~/.config/trello/credentials` (outside every repo, `chmod 600`), and then the
+command that sets your default board. `... trello_update.py boards` lists every
+board you can reach. To use another board for one command, add
+`TRELLO_BOARD=<short id or part of its name>`. Offline tests:
 `python3 -m unittest discover -s skills/trello/scripts`.

@@ -616,6 +616,7 @@ class Statement:
     end: int
     name: str | None
     exported: tuple[str, ...]
+    type_only: bool = False
 
 
 class Structure:
@@ -660,6 +661,9 @@ class Structure:
         for statement in statements:
             if statement.name in aliases:
                 statement.exported = tuple(sorted({*statement.exported, *aliases[statement.name]}))
+
+    def value_exports(self) -> list[str]:
+        return sorted(alias for alias, targets in self.exports.items() if not all(t.type_only for t in targets))
 
     def owners(self, line: int) -> set[str] | None:
         statement = next((s for s in self.statements if s.start <= line <= s.end), None)
@@ -718,7 +722,8 @@ def classify(block: str, start: int, end: int, python: bool) -> Statement:
     if found:
         name = found.group("name")
         exported = (("default",) if found.group("default") else (name,)) if found.group("export") else ()
-        return Statement(start, end, name, exported)
+        type_only = found.group("kind").strip() in ("interface", "type")
+        return Statement(start, end, name, exported, type_only)
     if JS_EXPORT_DEFAULT.match(text):
         return Statement(start, end, "default", ("default",))
     return Statement(start, end, None, ())
@@ -962,6 +967,10 @@ class Graph:
     def exports(self, path: str) -> list[str]:
         structure = self.structure(path)
         return sorted(structure.exports) if structure else []
+
+    def value_exports(self, path: str) -> list[str]:
+        structure = self.structure(path)
+        return structure.value_exports() if structure else []
 
     def uses(self, target: str, wanted: frozenset | None = None) -> list[Edge]:
         key = (target, wanted)
@@ -1305,7 +1314,7 @@ class Census:
         for row in self.rows.values():
             if row.status not in ("SHARED", "KEEP"):
                 continue
-            for name in self.graph.exports(row.path):
+            for name in self.graph.value_exports(row.path):
                 users = set()
                 for edge in self.graph.uses(row.path, frozenset({name})):
                     zone = self.layout.zone(edge.source)
@@ -1316,7 +1325,7 @@ class Census:
                 row.exports[name] = sorted(users)
 
     def lonely_exports(self, row: Row) -> dict[str, list[str]]:
-        return {n: d for n, d in row.exports.items() if not {"shared", "root"} & set(d) and len(d) < 2}
+        return {n: d for n, d in row.exports.items() if not {"shared", "root"} & set(d) and len(d) == 1}
 
 
 def load(repo: Path, ref: str, config_arg: str | None, layout: Layout | None = None) -> tuple[Graph, Source]:
@@ -1519,8 +1528,9 @@ def placement_findings(layout: Layout, before: Census, after: Census, renames: d
             ))
         elif row.status == "ROOT" and prior.status in ("SHARED", "KEEP"):
             findings.append(Finding("NOW_ROOT", path, f"was {prior.status} — {action_text(row)}"))
-        elif row.status in ("SINGLE", "NONE") and path in changed:
-            findings.append(Finding("TOUCHED_DEBT", path, f"edits a shared file only {consumers} uses — {action_text(row)}"))
+        elif row.status in ("SINGLE", "NONE") and path in changed and not row.planned:
+            users = f"only {consumers} uses" if row.domains else "no domain uses"
+            findings.append(Finding("TOUCHED_DEBT", path, f"edits a shared file {users} — {action_text(row)}"))
         elif row.status == "JUSTIFIED" and row.would_be in ("SINGLE", "NONE") and prior.status == "JUSTIFIED" and prior.would_be in ("SHARED", "KEEP"):
             findings.append(Finding(
                 "JUSTIFIED_LOST", path,
@@ -1567,13 +1577,20 @@ def export_findings(before: Census, after: Census, renames: dict[str, str], chan
     for path, row in sorted(after.rows.items()):
         if path not in changed:
             continue
-        prior = before.rows.get(renames.get(path, path))
+        old_path = renames.get(path, path)
+        prior = before.rows.get(old_path)
+        existed = set(before.graph.value_exports(old_path))
+        lines = []
         for name, domains in after.lonely_exports(row).items():
             was = prior.exports.get(name) if prior else None
-            if was is not None and not {"shared", "root"} & set(was) and len(was) < 2:
-                continue
-            state = "new" if was is None else f"was {','.join(was) or 'none'}"
-            findings.append(Finding(kind, f"{path}:{name}", f"used by {','.join(domains) or 'no domain'} ({state})"))
+            if was is not None:
+                if len(was) < 2 and not {"shared", "root"} & set(was):
+                    continue
+                lines.append(f"{name} (was {','.join(was)}, now {domains[0]})")
+            elif name not in existed:
+                lines.append(f"{name} (new, {domains[0]})")
+        if lines:
+            findings.append(Finding(kind, path, "exports only one domain uses: " + "; ".join(lines)))
     return findings
 
 
@@ -1627,7 +1644,7 @@ def cmd_diff(args: argparse.Namespace) -> int:
     if layout.unit == "export" or layout.ask_exports:
         findings += export_findings(before, after, renames, changed)
     findings += [
-        Finding("RULES_EDITED", path, "this change edits the placement rules; review uses the base version")
+        Finding("RULES_EDITED", path, "edits the placement rules; they apply from the next PR. Do they match what the team decided?")
         for path in sorted(changed & layout.rule_files())
     ]
     findings = settle_justified(findings, head_justified(repo, layout, args.head, args.config))
@@ -1636,6 +1653,10 @@ def cmd_diff(args: argparse.Namespace) -> int:
         for finding in findings:
             finding.soft = True
     warnings += after.warnings
+    touched_planned = sorted(
+        f"{p} ({after.rows[p].planned.get('ticket', 'planned')})"
+        for p in changed if p in after.rows and after.rows[p].planned and after.rows[p].status in VIOLATIONS
+    )
     moved_out = sorted((old, new) for new, old in renames.items() if layout.is_shared(old) and not layout.is_shared(new))
     removed = sorted(p for p in deleted if layout.is_shared(p))
     touched = any(layout.is_shared(p) for p in changed) or any(f.kind in ("CROSS", "UPWARD") for f in findings)
@@ -1650,9 +1671,13 @@ def cmd_diff(args: argparse.Namespace) -> int:
             "warnings": warnings,
             "suggested_verdict": verdict,
             "findings": [{**{k: v for k, v in f.__dict__.items() if k != "soft"}, "blocking": f.blocking, "verdict": f.verdict} for f in findings],
+            "touches_planned_debt": touched_planned,
             "moved_out_of_shared": [{"from": o, "to": n} for o, n in moved_out],
             "removed_from_shared": removed,
-            "changed_shared": [after.rows[p].as_json() for p in sorted(changed) if p in after.rows],
+            "changed_shared": [
+                {k: v for k, v in after.rows[p].as_json().items() if k in ("path", "status", "domains", "move_to", "planned")}
+                for p in sorted(changed) if p in after.rows
+            ],
         }, indent=1))
     else:
         print(f"DIFF: base {before_source.label()} head {after_source.label()} — config {layout.origin} — unit {layout.unit}")
@@ -1661,6 +1686,8 @@ def cmd_diff(args: argparse.Namespace) -> int:
         print(f"suggested verdict: {verdict} — {blocking} blocking, {len(findings) - blocking} questions")
         for finding in findings:
             print(finding.render())
+        if touched_planned:
+            print("touches planned debt (not a finding): " + ", ".join(touched_planned))
         for old, new in moved_out:
             print(f"moved out of shared: {old} -> {new}")
         for path in removed:

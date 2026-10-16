@@ -44,7 +44,7 @@ When folders don't say it, name the domain from the path with a regex:
 | `justified` | `[]` | `{"path": glob, "why": text}`. The documented homes and platform files: shared on purpose, with a reason. Only list a file the census would otherwise call SINGLE, NONE or ROOT. Its row keeps `would_be`, and a diff asks `JUSTIFIED_LOST` when that gets worse. A PR that adds a line turns its own block into a question for the reviewer. |
 | `planned` | `[]` | `{"path": glob, "ticket": text, "to": text}`. Decided moves of today's debt. The row says "planned in <ticket>: <to>" instead of a generic hint, and nothing blocks on it. `census --ticket <ticket>` prints one card's worklist; an entry that matches no file means the move is done. |
 | `unit` | `"file"` | `"export"` also checks every export of a shared file. One that only one domain uses blocks (`EXPORT`). |
-| `askExports` | `false` | With `unit: "file"`, a shared file a change touches whose export becomes single-consumer gets a question (`EXPORT_ASK`). Exports that were already single-consumer stay quiet. |
+| `askExports` | `false` | With `unit: "file"`, one question per shared file a change touches (`EXPORT_ASK`), listing exports exactly one domain uses that are new or just lost a user. Exports only tests use, TypeScript types, and exports that were already single-consumer stay quiet. |
 | `pythonRoots` | `[""]` | Folders where absolute Python imports start, as in `["backend"]` for `from utils.x import y` inside `backend/`. |
 | `basenameFallback` | `false` | If a relative import does not resolve, match it to the one file with the same name. On when guessing. |
 | `scanExtensions` | `[]` | More file types to scan for `references`. |

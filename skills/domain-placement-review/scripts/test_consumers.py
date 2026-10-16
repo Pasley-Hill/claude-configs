@@ -515,6 +515,46 @@ class WorklistTest(unittest.TestCase):
         self.assertEqual([f["kind"] for f in json.loads(out)["findings"]], ["NEW_ROOT"])
 
 
+class QuietQuestionsTest(unittest.TestCase):
+    def setUp(self):
+        config = dict(CONFIG, askExports=True, planned=[{"path": "app/shared/only-admin.ts", "ticket": "#9", "to": "app/admin/"}])
+        self.repo = js_repo({".claude/domain-placement.json": json.dumps(config)})
+        self.base = self.repo.git("rev-parse", "HEAD")
+
+    def tearDown(self):
+        self.repo.close()
+
+    def diff(self) -> dict:
+        _, out = self.repo.run("diff", "--base", self.base, "--head", "HEAD", "--json")
+        return json.loads(out)
+
+    def test_touching_planned_debt_is_not_a_finding(self):
+        self.repo.commit({"app/shared/only-admin.ts": "export const x = 2;\n"})
+        result = self.diff()
+        self.assertEqual(result["findings"], [])
+        self.assertEqual(result["touches_planned_debt"], ["app/shared/only-admin.ts (#9)"])
+
+    def test_new_single_domain_exports_fold_into_one_question(self):
+        self.repo.commit({
+            "app/shared/both.ts": (
+                "export function both() {}\nexport function lonely() {}\n"
+                "export function adminOnly() {}\nexport function alsoAdmin() {}\n"
+                "export type AdminShape = { a: number };\nexport function testOnly() {}\n"
+            ),
+            "app/admin/a.ts": (
+                "import { both, adminOnly, alsoAdmin, type AdminShape } from '../shared/both.ts';\n"
+                "import { x } from '../shared/only-admin.ts';\nimport { k } from '../shared/kernel.ts';\n"
+            ),
+        })
+        findings = self.diff()["findings"]
+        self.assertEqual([f["kind"] for f in findings], ["EXPORT_ASK"])
+        self.assertIn("adminOnly (new, admin)", findings[0]["detail"])
+        self.assertIn("alsoAdmin (new, admin)", findings[0]["detail"])
+        self.assertNotIn("AdminShape", findings[0]["detail"])
+        self.assertNotIn("testOnly", findings[0]["detail"])
+        self.assertNotIn("lonely", findings[0]["detail"])
+
+
 class PythonBarrelTest(unittest.TestCase):
     def test_package_init_reexport_is_followed_by_name(self):
         repo = Repo({

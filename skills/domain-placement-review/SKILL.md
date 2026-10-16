@@ -19,7 +19,8 @@ You check placement only: does this code belong to one domain, or in shared? You
 3. **No promoting code to get past a gate.** Promoting code to shared, or adding an allowlist or
    `justified` line, to get past a gate is a finding, unless a second domain really uses it.
 4. **The rules come from the base branch.** They are the repo's `.claude/domain-placement.json`
-   and the docs it lists in `rules`. Read its `notes` first.
+   and the docs it lists in `rules`. Read its `notes` first:
+   `git show origin/<base>:.claude/domain-placement.json`.
 5. **File or export:** the config's `unit` decides. `askExports` turns exports that only one
    domain uses into questions.
 
@@ -38,12 +39,14 @@ never checks out.
 
 ## Review a PR
 
-1. Run `gh pr view <n> --json baseRefName,headRefOid,state,mergeCommit`, then
-   `git fetch origin <base> pull/<n>/head`.
-   - **Merged (merge or squash):** use `--base <commit>^ --head <commit>`.
-   - **Local, no PR:** use `--head .` and label the verdict `#local@<head>`.
-   - **Back-merge or sync PRs** carry another branch's code. Expect `no placement changes`.
-2. Run `consumers.py diff --base origin/<base> --head <sha> --json`.
+1. Run `gh pr view <n> --json baseRefName,headRefName,headRefOid,state,mergeCommit`.
+   - **Open:** `git fetch origin <base> pull/<n>/head`, then use `--base origin/<base> --head <headRefOid>`.
+   - **Merged (merge or squash):** use `--base <commit>^ --head <commit>`; no fetch needed.
+   - **Local, no PR:** use `--base origin/<default branch> --head .`, and label the verdict
+     `#local@<head>`.
+   - **Back-merge, sync or release promotion** (another branch's code, already reviewed): post
+     `VERDICT: PASS — back-merge, reviewed on its own PRs — #<n>@<sha7>` and stop.
+2. Run `consumers.py diff --base <base> --head <head> --json`.
    - Each finding has a `verdict` (MISPLACED or NEEDS-ANSWER) and a `detail`.
    - The run has a `suggested_verdict`.
    - The exit code is 1 only when something blocks.
@@ -53,6 +56,10 @@ never checks out.
    - `NEW_JUSTIFIED`: the change records its own decision. Quote the reason and ask whether it
      holds (rule 3).
    - `TOUCHED_DEBT` and `REVEALED` are old debt. Suggest the move; never block on them.
+     `touches_planned_debt` is debt with a card already; mention it once, at most.
+   - `planned` never softens `NEW_*` or `LOST_SECOND`: a new file is new debt.
+   - Every NEEDS-ANSWER line ends with the question a human must answer, including
+     `RULES_EDITED`, `EXPORT_ASK` and `JUSTIFIED_LOST`.
 4. In the changed files only, check what the script cannot see:
    - languages it does not parse;
    - paths built from strings;
@@ -65,11 +72,11 @@ never checks out.
 
 ```
 VERDICT: <suggested verdict, unless step 3 changed it> — #<n>@<sha7>
-<path>[:<export>] — consumers: <domains> (<file:line>) — MISPLACED | NEEDS-ANSWER | JUSTIFIED — <where it goes, or the question>
+<path> — [consumers: <domains> (<file:line>) — ]MISPLACED | NEEDS-ANSWER | JUSTIFIED — <where it goes, or the question>
 ```
 
-Write one line per finding you keep. `moved out of shared` and `removed from shared` are not
-items.
+Write one line per finding you keep; several exports of one file share a line. Leave out
+`consumers:` when there are none. `moved out of shared` and `removed from shared` are not items.
 
 ## Audit a folder, or plan a move
 

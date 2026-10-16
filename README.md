@@ -6,7 +6,7 @@ My personal [Claude Code](https://claude.com/claude-code) configuration: reusabl
 
 | Dir | What's in it |
 |-----|--------------|
-| `skills/` | Skills (each a `SKILL.md`): `commit`, `domain-placement-review` (does this code belong in shared or in one domain? PR check, census and move plan for any repo), `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui`, `trello`, `trello-task` |
+| `skills/` | Skills (each a `SKILL.md`): `commit`, `domain-placement-review` (does this code belong in shared or in one domain? PR review, shared-folder audit and move plan, any repo), `frontend-design`, `github-cli`, `grill-me`, `mac-tailscale`, `quiz-me`, `tailwind-plus-app-ui`, `trello`, `trello-task` |
 | `plugins/` | Vendored Claude Code plugins: `frontend-design` (from anthropics/claude-plugins-official) |
 | `agents/` | Subagents: `flutter-master`, `vanilla-frontend-master`, `grammar-master`, `python-master`, plus a five-stage build pipeline (Uncle Bob style) run in order: `pipeline-specifier` → `pipeline-coder` → `pipeline-cleaner` → `pipeline-hardener` → `pipeline-qa`. Stages hand off through `.pipeline/<slug>/handoff.md` |
 | `commands/` | Slash commands: `aws`, `build-apk`, `changelog`, `commit`, `create-migration`, `create-mockup`, `deploy-app`, `update-readme`, `upload-mockups` |
@@ -52,6 +52,21 @@ progress in the browser.
 ```bash
 ln -sfn "$PWD/skills/quiz-me" ~/.claude/skills/quiz-me
 ```
+
+`domain-placement-review` checks whether code belongs to one domain or in shared.
+Its counter, `skills/domain-placement-review/scripts/consumers.py`, needs Python 3.9+
+and git, and nothing else. It reads JS/TS, Python and HTML-like templates. Each repo
+describes its layout in `.claude/domain-placement.json` (see `references/config.md`).
+Without that file it guesses the layout, says so, and never blocks.
+
+```bash
+ln -sfn "$PWD/skills/domain-placement-review" ~/.claude/skills/domain-placement-review
+python3 skills/domain-placement-review/scripts/consumers.py census --repo <repo> --ref origin/main
+python3 -m unittest discover -s skills/domain-placement-review/scripts
+```
+
+In a repo's CI, `consumers.py diff --base origin/<base> --head HEAD` exits 1 only when
+something blocks, and `census --strict` exits 1 while single-owner files are left.
 
 `tailwind-plus-app-ui` drives the [Tailwind Plus](https://tailwindcss.com/plus)
 Application UI v4 HTML components. Those are licensed, so only the tooling and

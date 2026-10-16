@@ -1653,9 +1653,11 @@ def cmd_diff(args: argparse.Namespace) -> int:
         for finding in findings:
             finding.soft = True
     warnings += after.warnings
+    raised = {f.path.split(":", 1)[0] for f in findings}
     touched_planned = sorted(
         f"{p} ({after.rows[p].planned.get('ticket', 'planned')})"
-        for p in changed if p in after.rows and after.rows[p].planned and after.rows[p].status in VIOLATIONS
+        for p in changed
+        if p in after.rows and p not in raised and after.rows[p].planned and after.rows[p].status in VIOLATIONS
     )
     moved_out = sorted((old, new) for new, old in renames.items() if layout.is_shared(old) and not layout.is_shared(new))
     removed = sorted(p for p in deleted if layout.is_shared(p))

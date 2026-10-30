@@ -1,6 +1,6 @@
 ---
 name: trello
-description: Update existing Trello cards on the Redline OS or AutoTurn boards — move a card, comment progress, tick checklist items, set labels/assignees/due/effort/priority, or load a card as the spec for a feature. Use when the user says "comment on card X", "move 601 to QA", "what's on my plate", "let's work card #243", or names a Trello card. NOT for creating cards — that is the trello-task skill.
+description: Update existing Trello cards on the Redline OS, AutoTurn or ArbLogix boards — move a card, comment progress, tick checklist items, set labels/assignees/due/effort/priority, or load a card as the spec for a feature. Use when the user says "comment on card X", "move 601 to QA", "what's on my plate", "let's work card #243", or names a Trello card. NOT for creating cards — that is the trello-task skill.
 ---
 
 # Update a Trello card
@@ -53,14 +53,15 @@ TRELLO_BOARD=autoturn python3 ~/.claude/skills/trello/scripts/trello_update.py b
 TRELLO_BOARD=JEcYPEdW python3 ~/.claude/skills/trello/scripts/trello_update.py board
 ```
 
-The team's two boards are not interchangeable:
+The team's three boards are not interchangeable:
 
 | Board | Short id | Use for |
 |---|---|---|
 | **Redline OS** (formerly "Lotgentix") | `JEcYPEdW` | The Redline OS rebuild, ports, parity work, bugs |
 | **Autoturn.ai Wholesale** | `t7CdxreR` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
+| **Arblogix** | `vog6rBP1` | ArbLogix: LaneAssure scoring site, Decision Motor, vehicle data and scraping, infra |
 
-A card number can exist on both boards and resolve to the wrong card. If the user
+A card number can exist on more than one board and resolve to the wrong card. If the user
 names a board, pass it with `TRELLO_BOARD`. If they don't and the subject doesn't
 make it obvious, ask. If `TRELLO_BOARD` matches none or several of the user's
 boards, the CLI lists them. Pick the right one from that list, never guess.
@@ -69,7 +70,7 @@ Run `... trello_update.py board` any time you need the current lists, labels,
 members and custom-field options. Run `--help` or `<subcommand> --help` for
 exact flags. The script resolves list / label / member / custom-field ids **by
 name at call time** for whichever board is targeted, so nothing is hardcoded.
-That matters: the two boards' Effort and Priority fields share names but have
+That matters: the boards' Effort and Priority fields share names but have
 different ids.
 
 ## Referring to a card

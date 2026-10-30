@@ -1,6 +1,6 @@
 ---
 name: trello-task
-description: Write a new Trello task card in the product voice, then push it to the Redline OS or AutoTurn board. Use when the user says "crea una tarjeta de Trello", "create a Trello card", "make a card for this", "add this to the backlog", or describes work that should become a ticket. For editing or moving an EXISTING card, use the trello skill instead.
+description: Write a new Trello task card in the product voice, then push it to the Redline OS, AutoTurn or ArbLogix board. Use when the user says "crea una tarjeta de Trello", "create a Trello card", "make a card for this", "add this to the backlog", or describes work that should become a ticket. For editing or moving an EXISTING card, use the trello skill instead.
 ---
 
 # Write and push a Trello card
@@ -59,12 +59,13 @@ why that is the whole ballgame.
 
 ## Which board — ask, never assume
 
-Two boards, and they are not interchangeable:
+Three boards, and they are not interchangeable:
 
 | Board | Short id | Reach it with | Use for |
 |---|---|---|---|
 | **Redline OS** | `JEcYPEdW` | `TRELLO_BOARD=redline` | Redline OS: the rebuild, ports, parity work, bugs |
 | **Autoturn.ai Wholesale** | `t7CdxreR` | `TRELLO_BOARD=autoturn` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
+| **Arblogix** | `vog6rBP1` | `TRELLO_BOARD=arblogix` | ArbLogix: LaneAssure scoring site, Decision Motor, vehicle data and scraping, infra |
 
 The user's `TRELLO_BOARD_ID` default is a **fallback, not the answer**. If the user
 names a board ("the AutoTurn board"), prefix the command with
@@ -81,11 +82,12 @@ the API, match on `shortLink`, never on name.
 Before pushing, you MUST have these five. If any is missing from the user's
 message, ASK. Do not guess.
 
-1. **List** — the two boards differ:
+1. **List** — the boards differ:
    - Redline OS: `Backlog`, `On-Deck`, `Todo`, `In-progress`, `QA & Testing`
    - AutoTurn: `Backlog`, `On-Deck`, `Sprint Todo`, `In-progress`, `QA & Testing`
+   - ArbLogix: `Backlog`, `On-Deck`, `Todo`, `In-progress`, `In-QA`, `Done`
 
-   Both also carry a rolling `✅ Done Week <date>` list — don't file new cards
+   Redline OS and AutoTurn also carry a rolling `✅ Done Week <date>` list — don't file new cards
    there. `create` refuses an archived list outright.
 2. **Label** — the label sets are very different:
    - **Redline OS (18)** — a card often takes one surface label plus one kind-of-work label:
@@ -95,12 +97,13 @@ message, ASK. Do not guess.
      - *Triage:* `BUGGY BUG BUG`, `Found in QA`, `HOLD`, `QUESTIONS`
      - *Legacy:* `Lotgentix`
    - **AutoTurn (35)**: `Core Platform`, `Pricing Service`, `Infrastructure`, `Scraping`, `Dealer Match V3`, `Mobile App`, `BI & Data Science`, `Dealership Page`, `Checkout Workflow`, `Backend`, `Why Buy Page`, `Why Sell Page`, `Notification System`, `Data Lake Migration`, `BUGGY BUG BUG`, `Cross-Org Fix`, `Redline QA`, `Planning`, `Feedback`, `QUESTIONS`, `BLOCKED`, `Org Features`, `Research`, `Requests`, `Emails`, `CapitalOne`, `Trade Wizard`, `Self-Healing`, `CarGurus`, `Lotgentix`, `CarMax`, `Trade Agent`, `Carvana`, `Rebuild`, `Data QA`
+   - **ArbLogix (7)**: `Webapp`, `Decision Motor`, `Data & Scraping`, `Infra`, `Experimental`, `QUESTIONS`, `BLOCKED`. Experiments and spikes take `Experimental`.
 
    These lists are documentation and go stale. Fetch the live set with
    `trello_update.py board` rather than trusting them, and offer real options
    when you ask.
 3. **Effort (1–10)** — a number for the `Effort (1-10)` custom field.
-4. **Priority** — one of `Highest`, `High`, `Medium`, `Low`, `Lowest`, `Not sure` (same options on both boards).
+4. **Priority** — one of `Highest`, `High`, `Medium`, `Low`, `Lowest`, `Not sure` (same options on every board).
 5. **Due Date** — REQUIRED. ISO 8601 (`YYYY-MM-DD`). If the user gives a relative
    phrase ("today", "tomorrow", "this Wednesday", "next Friday", "in 2 weeks"),
    INFER the exact date from today's date in system context and state the
@@ -109,12 +112,12 @@ message, ASK. Do not guess.
 
 ## Custom field ids are PER BOARD — resolve them, don't hardcode
 
-This is the trap. Both boards have fields with the same names and different ids:
+This is the trap. The boards have fields with the same names and different ids:
 
-| Field | Redline OS | AutoTurn |
-|---|---|---|
-| `Effort (1-10)` (number) | `6a43e0ad8fb17dd17b92c303` | `696efb921a4080297fa40bfa` |
-| `Priority` (list) | `6a43e0ad8fb17dd17b92c2f4` | `696efeb22a49a20fc3da0bfd` |
+| Field | Redline OS | AutoTurn | ArbLogix |
+|---|---|---|---|
+| `Effort (1-10)` (number) | `6a43e0ad8fb17dd17b92c303` | `696efb921a4080297fa40bfa` | `6ae20939e4761c1f2759289a` |
+| `Priority` (list) | `6a43e0ad8fb17dd17b92c2f4` | `696efeb22a49a20fc3da0bfd` | `6ae20939d46f2ff1b861a23a` |
 
 The ids above are documentation, not inputs. `create` looks every one of them up
 by name from `GET /boards/{board}/customFields` for the board it is writing to —

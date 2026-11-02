@@ -1,158 +1,220 @@
 ---
 name: trello-task
-description: Write a new Trello task card in the product voice, then push it to the Redline OS, AutoTurn or ArbLogix board. Use when the user says "crea una tarjeta de Trello", "create a Trello card", "make a card for this", "add this to the backlog", or describes work that should become a ticket. For editing or moving an EXISTING card, use the trello skill instead.
+description: Write a new Trello task card by interviewing the user first (outcome, audience, scope, open questions) so nothing in the card is invented, then push it to the Redline OS, AutoTurn or ArbLogix board. Also reviews existing cards against the same standard. Use when the user says "crea una tarjeta de Trello", "create a Trello card", "make a card for this", "add this to the backlog", "revisemos las tarjetas", "review the cards on the board", or describes work that should become a ticket. For moving or commenting an EXISTING card, use the trello skill instead.
 ---
 
-# Write and push a Trello card
+# Write a Trello card: interview first, then write, then push
 
-Help the user write a Trello task card, then push it. If details are unclear,
-ask clarifying questions **before** writing.
+A card is a promise to the team about what will exist when the work is done. It
+has to come from the user's head, not from yours. **Interview first, write
+second, push last.**
 
-## The card body
+The one rule everything else follows from: **nothing goes on the card that the
+user didn't say or confirm.** No plausible details, no invented numbers, no
+"obvious" sub-features, no deadline you picked. If you need something and don't
+have it, ask; if the user doesn't know yet, that is an *open question* on the
+card, not a blank for you to fill.
 
-Use this exact structure:
+## Step 1 — Interview (before writing anything)
+
+Ask these in the **language of the conversation**, **one at a time**, so each
+answer can reshape the next question. Skip any the user already answered; never
+ask one just to complete the set. If the host offers a structured question tool,
+use it; plain chat is fine too. Group them into one message only if the user asks
+for that.
+
+1. **Outcome.** When this is done, what can someone do or see that they can't
+   today? Who is that someone (dealer, insurer, Chris, Marc, the team)?
+2. **Why now.** What prompted it: a demo, a call, a request, a bug, a deadline?
+   Is there a date this is tied to, and whose date is it?
+3. **Edges.** What is explicitly *not* part of this? Is it one change, or several
+   that happen to be related?
+4. **Unknowns.** Is anything undecided, waiting on someone, or blocked (data
+   access, a decision, a document)? Who unblocks it?
+5. **Done.** How would you check it's done? What would you click or look at?
+
+These are high-level on purpose. Their job is to give the user room to explain
+what they actually want to build, and to surface the parts that are still
+undecided, before a draft locks a wrong idea into words.
+
+Then listen. The user's answers often change the card's shape: one card becomes
+two, a "feature" turns out to be a decision, a deadline turns out to be someone
+else's. Reflect that back in a sentence before drafting ("so this is really two
+things: the data load, and the screen that shows it. One card each?").
+
+If an answer is "I don't know" or "not decided": that is a real answer. It goes
+on the card as an **Open** line, and the card gets the `QUESTIONS` label (or
+`BLOCKED` when it waits on a person). Never resolve it yourself.
+
+## Step 2 — Draft the body
+
+Use this exact structure. **Write the card in English**, whatever language the
+chat is in: the board is the team's and it is English.
 
 **Title** — short, outcome-focused, no technical wording.
 
-**Context/Problem:** 1–2 sentences on the context, motivation or goal. This does
-NOT have to describe a problem — it can be an opportunity, a vision, or the
-purpose of the feature. Frame it around what the user or business needs, not
-necessarily what's broken.
+**Context/Problem:** 1–2 sentences on the motivation or goal, from the user's
+answers to 1 and 2. It does NOT have to describe a problem; an opportunity, a
+demo or the purpose of the feature is fine.
 
 **Solution:** 1–3 bullets describing the feature from a user or product
-perspective. Do NOT describe implementation, services, endpoints, refactors or
-data contracts.
+perspective, from answer 1 bounded by answer 3. No implementation, services,
+endpoints, refactors or data contracts.
 
-**Acceptance Criteria:** 2–5 short outcome-based statements describing what the
-user can see, experience or do once this is complete. Write them as simple
-sentences, not checkboxes.
+**Acceptance Criteria:** 2–5 short outcome statements, from answer 5: what the
+user can see, experience or do once this is complete. Simple sentences, not
+checkboxes.
+
+**Open:** (only if answer 4 produced any) one line per undecided point, naming
+who decides it.
 
 Rules:
 
-- Be brief and direct. No fluff.
-- Plain language, not technical jargon.
-- Focus on visible behavior and business outcome, not how it's built.
-- Never mention APIs, endpoints, refactors, services, database changes, contracts or plumbing.
-- If the task mixes multiple independent changes (rename, export, content, etc.), split them into separate cards automatically.
-- Keep the entire card under 130 words.
-- **Write the card in English**, whatever language the conversation is in. The board is the team's, and it is English. Match the artifact's language, not the chat's.
-- Output raw markdown for the card body, and show it to the user before pushing.
+- Brief and direct. Plain language. Under 130 words.
+- Visible behavior and business outcome, not how it's built. Never mention
+  APIs, endpoints, refactors, services, database changes or plumbing.
+  *Exception:* cards labelled `Infra` or `Experimental` may name the systems
+  involved when that **is** the outcome (an alert, a log, a tool). Even then,
+  keep the acceptance criteria about what someone observes.
+- One card per independent change. If the interview showed several, **propose**
+  the split and let the user confirm; don't split silently.
+- **Show the draft before pushing, with an `Assumed:` list under it** naming
+  every sentence the user didn't say in so many words (an inferred date, a
+  paraphrase that adds a detail, a label you chose). If that list is empty, say
+  so. The user strikes or confirms each item. Anything struck comes off the card.
+- **The draft has to be visible where the user answers.** If you ask for the
+  approval through a question dialog (a structured question tool), the dialog
+  covers the chat, so a body shown in the message above it is invisible. Put
+  the full body inside the dialog itself: in the option preview, or in the
+  question text if there is no preview. Never ask "does the body above look
+  right?" from a dialog. One draft per dialog; the five values can go in a
+  later one.
 
-## Setup (once per person)
+## Step 3 — Board and the five values
 
-Same credentials and default board as the `trello` skill, in
-`~/.config/trello/credentials`. If anything is missing, run
-`python3 ~/.claude/skills/trello/scripts/trello_update.py setup`. It prints the exact
-clicks on trello.com for the token, and the commands to save it and to pick a board.
-
-Cards are pushed with the same standard-library CLI the `trello` skill uses — no
-venv, no `pip install`:
-
-```bash
-python3 ~/.claude/skills/trello/scripts/trello_update.py create ...
-```
-
-Never hand-roll REST calls for this, and never put a key or token on a command
-line. The CLI resolves every list, label and custom-field id **by name, against
-the board being written to** — see "Custom field ids are PER BOARD" below for
-why that is the whole ballgame.
-
-## Which board — ask, never assume
-
-Three boards, and they are not interchangeable:
+### Which board — ask, never assume
 
 | Board | Short id | Reach it with | Use for |
 |---|---|---|---|
 | **Redline OS** | `JEcYPEdW` | `TRELLO_BOARD=redline` | Redline OS: the rebuild, ports, parity work, bugs |
 | **Autoturn.ai Wholesale** | `t7CdxreR` | `TRELLO_BOARD=autoturn` | AutoTurn: pricing, scraping, dealer match, checkout, data lake |
-| **Arblogix** | `vog6rBP1` | `TRELLO_BOARD=arblogix` | ArbLogix: LaneAssure scoring site, Decision Motor, vehicle data and scraping, infra |
+| **Arblogix** | `vog6rBP1` | `TRELLO_BOARD=arblogix` | ArbLogix: VIN data, decision motor, warranty webapp, its infra |
 
-The user's `TRELLO_BOARD_ID` default is a **fallback, not the answer**. If the user
-names a board ("the AutoTurn board"), prefix the command with
-`TRELLO_BOARD=<short id or name>`. If no board is named and the work's subject
-doesn't make it obvious, **ask**. Getting this wrong means the user has to move
-the card by hand. `... trello_update.py boards` lists every board they can write to.
+The user's `TRELLO_BOARD_ID` default is a **fallback, not the answer**. If the
+user names a board, prefix the command with `TRELLO_BOARD=<short id or name>`.
+If no board is named and the subject doesn't make it obvious, **ask**. Getting
+this wrong means the user moves the card by hand. `trello_update.py boards`
+lists every board they can write to. `JEcYPEdW` was renamed from "Lotgentix" to
+"Redline OS": match on `shortLink`, never on name.
 
-`JEcYPEdW` was renamed from "Lotgentix" to **"Redline OS"**, so a name check
-against the old label finds nothing. When you confirm a board mapping against
-the API, match on `shortLink`, never on name.
+### The five values — ask for what's missing, offer live options
 
-## Required values
+Run `TRELLO_BOARD=… trello_update.py board` first and offer the **live** lists
+and labels; the sets below are documentation and go stale.
 
-Before pushing, you MUST have these five. If any is missing from the user's
-message, ASK. Do not guess.
+1. **List.** Redline OS: `Backlog`, `On-Deck`, `Todo`, `In-progress`,
+   `QA & Testing`. AutoTurn: same but `Sprint Todo`. ArbLogix: `Backlog`,
+   `On-Deck`, `Todo`, `In-progress`, `In-QA`. Every board also has a rolling
+   `✅ Done Week <date>` list: never file new cards there.
+2. **Label(s).** Redline OS has ~18 (surface `/admin` `/dealer` `/redline`
+   `No-login view`, kind of work `Rebuild` `PARITY MISSING` `UX Simplify`
+   `Documentation` `System Config`, domain, triage `BUGGY BUG BUG` `Found in QA`
+   `HOLD` `QUESTIONS`). AutoTurn has ~35 by product area. ArbLogix has
+   `Data & Scraping`, `Webapp`, `Decision Motor`, `Infra`, `Experimental`,
+   `QUESTIONS`, `BLOCKED`.
+3. **Effort (1–10)**, a number for the `Effort (1-10)` custom field.
+4. **Priority**: `Highest`, `High`, `Medium`, `Low`, `Lowest`, `Not sure`.
+5. **Due date**, ISO 8601. Only set one the user gave or tied to something in
+   answer 2 ("for the January demo", "before Chris's call Friday"). A relative
+   phrase ("next Friday", "in two weeks") you convert from today's date and list
+   under `Assumed:`. **No hint at all means no due date**, and you say so; a
+   made-up due date is the most common invented fact on a board.
 
-1. **List** — the boards differ:
-   - Redline OS: `Backlog`, `On-Deck`, `Todo`, `In-progress`, `QA & Testing`
-   - AutoTurn: `Backlog`, `On-Deck`, `Sprint Todo`, `In-progress`, `QA & Testing`
-   - ArbLogix: `Backlog`, `On-Deck`, `Todo`, `In-progress`, `In-QA`, `Done`
+   Dates land in Trello as UTC. If the user works in another time zone, pick the
+   local time they mean (end of the workday unless told otherwise), convert it,
+   and pass the full timestamp, e.g. `2026-11-04T21:00:00.000Z` for 18:00 at
+   UTC-3; a bare date shows as the previous evening there.
 
-   Redline OS and AutoTurn also carry a rolling `✅ Done Week <date>` list — don't file new cards
-   there. `create` refuses an archived list outright.
-2. **Label** — the label sets are very different:
-   - **Redline OS (18)** — a card often takes one surface label plus one kind-of-work label:
-     - *Surface:* `/admin`, `/dealer`, `/redline`, `No-login view`
-     - *Kind of work:* `Rebuild`, `PARITY MISSING`, `UX Simplify`, `Documentation`, `System Config`
-     - *Domain:* `CDK sync`, `CS Agent`, `SMS & Emails`, `Notification System`
-     - *Triage:* `BUGGY BUG BUG`, `Found in QA`, `HOLD`, `QUESTIONS`
-     - *Legacy:* `Lotgentix`
-   - **AutoTurn (35)**: `Core Platform`, `Pricing Service`, `Infrastructure`, `Scraping`, `Dealer Match V3`, `Mobile App`, `BI & Data Science`, `Dealership Page`, `Checkout Workflow`, `Backend`, `Why Buy Page`, `Why Sell Page`, `Notification System`, `Data Lake Migration`, `BUGGY BUG BUG`, `Cross-Org Fix`, `Redline QA`, `Planning`, `Feedback`, `QUESTIONS`, `BLOCKED`, `Org Features`, `Research`, `Requests`, `Emails`, `CapitalOne`, `Trade Wizard`, `Self-Healing`, `CarGurus`, `Lotgentix`, `CarMax`, `Trade Agent`, `Carvana`, `Rebuild`, `Data QA`
-   - **ArbLogix (7)**: `Webapp`, `Decision Motor`, `Data & Scraping`, `Infra`, `Experimental`, `QUESTIONS`, `BLOCKED`. Experiments and spikes take `Experimental`.
+Effort and Priority are the user's call. If they shrug, `Priority: Not sure` is
+a valid answer and effort stays empty; don't estimate for them.
 
-   These lists are documentation and go stale. Fetch the live set with
-   `trello_update.py board` rather than trusting them, and offer real options
-   when you ask.
-3. **Effort (1–10)** — a number for the `Effort (1-10)` custom field.
-4. **Priority** — one of `Highest`, `High`, `Medium`, `Low`, `Lowest`, `Not sure` (same options on every board).
-5. **Due Date** — REQUIRED. ISO 8601 (`YYYY-MM-DD`). If the user gives a relative
-   phrase ("today", "tomorrow", "this Wednesday", "next Friday", "in 2 weeks"),
-   INFER the exact date from today's date in system context and state the
-   inferred date back when reporting the card, so they can correct it. Only ask
-   if there's no due-date hint at all.
+## Step 4 — Push and report
 
-## Custom field ids are PER BOARD — resolve them, don't hardcode
+Same credentials and CLI as the `trello` skill (`~/.config/trello/credentials`;
+`python3 ~/.claude/skills/trello/scripts/trello_update.py setup` walks through
+anything missing). Standard library only, no venv. Never hand-roll REST calls,
+never put a key or token on a command line.
 
-This is the trap. The boards have fields with the same names and different ids:
-
-| Field | Redline OS | AutoTurn | ArbLogix |
-|---|---|---|---|
-| `Effort (1-10)` (number) | `6a43e0ad8fb17dd17b92c303` | `696efb921a4080297fa40bfa` | `6ae20939e4761c1f2759289a` |
-| `Priority` (list) | `6a43e0ad8fb17dd17b92c2f4` | `696efeb22a49a20fc3da0bfd` | `6ae20939d46f2ff1b861a23a` |
-
-The ids above are documentation, not inputs. `create` looks every one of them up
-by name from `GET /boards/{board}/customFields` for the board it is writing to —
-a hardcoded AutoTurn id silently fails to set the field on a Redline OS card,
-with no error. Same for list ids, label ids and Priority option ids.
-
-## Flow
-
-1. Write the card body and show it to the user.
-2. Resolve the target board from the request (table above); fall back to the
-   default board only when no board was named and the subject doesn't imply one.
-3. Confirm you have all five required values. Ask for whatever is missing; run
-   `trello_update.py board` to offer the live lists and labels.
-4. Push it, passing the body on stdin so no quoting mangles it:
+Pass the body on stdin so no quoting mangles it:
 
 ```bash
-python3 ~/.claude/skills/trello/scripts/trello_update.py create \
+TRELLO_BOARD=vog6rBP1 python3 ~/.claude/skills/trello/scripts/trello_update.py create \
   "Short outcome-focused title" \
   --list "Backlog" \
-  --label "/admin" --label "Rebuild" \
-  --effort 3 --priority Medium --due 2026-09-24 \
+  --label "Webapp" --label "QUESTIONS" \
+  --effort 3 --priority Medium --due 2026-12-04T21:00:00.000Z \
   --desc - <<'BODY'
-Context/Problem:
+**Context/Problem:**
+…
+
+**Solution:**
+- …
+
+**Acceptance Criteria:**
+…
+
+**Open:**
 …
 BODY
 ```
 
-   For AutoTurn, prefix the command with `TRELLO_BOARD=autoturn`.
-5. Report back what `create` prints: the short URL, **which board**, list,
-   labels, effort, priority and due date — including any date you inferred.
+`create` resolves every list, label and custom-field id **by name against the
+board it writes to**. That matters: the boards' `Effort (1-10)` and `Priority`
+fields share names and have different ids, so a hardcoded id from one board
+silently sets nothing on another.
+
+Report what `create` prints: short URL, **which board**, list, labels, effort,
+priority, due date, plus the `Assumed:` items the user accepted. Details that
+don't fit the body (links, call notes, numbers) go in a **comment** on the new
+card, through the `trello` skill's `comment`.
+
+## Review mode: existing cards against the same standard
+
+When the user asks to review, clean up or audit cards, read them first
+(`cards`, then `show <card> --comments 5` for each), and grade each one on:
+
+- **Outcome stated?** Does Context + Solution say what someone can do or see,
+  and for whom? Or is it a task list in disguise?
+- **Invented details?** Numbers, dates, sub-features or behaviors that look
+  plausible but the user never asked for. Flag them; don't assume they're wrong.
+- **One thing?** Would it ship as one piece, or is it two cards (or a card plus
+  a decision)?
+- **Open vs. decided.** Are undecided points marked as such (`Open:` line,
+  `QUESTIONS`/`BLOCKED` label), or buried in acceptance criteria as if settled?
+- **Still true?** Does it match what the user now knows (list, assignee, due
+  date, approach)? Comments often say the plan moved on and the body didn't.
+- **Voice.** Product-facing, English, under 130 words, no plumbing (with the
+  `Infra`/`Experimental` exception above).
+
+For each card give one verdict: **keep**, **touch up** (fields only),
+**rewrite**, **split**, or **archive**, with the one-line reason and the
+questions only the user can answer. Show the card's **current body** with the
+verdict, and the **proposed body** next to any rewrite, so the user judges text,
+not your summary of it. When the question goes through a dialog, both bodies go
+in the dialog's previews (the same rule as in Step 2). Go **card by card**: present one card's
+verdict, ask its questions one at a time the way Step 1 does, apply what the
+user confirmed, then move to the next. Apply **only what the user confirmed**, through the `trello` skill's commands (`desc --set`,
+`label`, `due`, `field`, `assign`, `move`, `archive`), and `create` here for any
+split-off card. Archive, never delete: Trello has no undo and archived cards
+can be brought back.
 
 ## Rules
 
-- These boards are **shared with the team**. A card appears for everyone the
-  moment it is created. Show the body and confirm the five values before
-  pushing; don't push a card the user hasn't seen.
-- One card per independent change. Split rather than bundle.
-- Never edit or move an existing card here — that's the `trello` skill.
+- These boards are **shared with the team**. A card is visible to everyone the
+  moment it exists, under the token owner's name. Never push a body the user
+  hasn't seen, and never push with `Assumed:` items still unanswered.
+- Nothing on the card the user didn't say or confirm. An open point is an
+  `Open:` line, not a guess.
+- One card per independent change; propose splits, don't make them silently.
+- Moving, commenting and editing cards is the `trello` skill's job; this skill
+  only decides *what* the card should say.
